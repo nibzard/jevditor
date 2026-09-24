@@ -2,7 +2,7 @@ import { getSchema } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { occurrenceKey, PRESET_RULES, type Rule } from "@jewriter/engine";
+import { occurrenceKey, PRESET_RULES, type Rule } from "@jevditor/engine";
 import type { LintRequest, TargetResult } from "../src/api.js";
 import { LintController, type CheckStatus } from "../src/lint/controller.js";
 import { extractBlocks, docRange } from "../src/lint/extract.js";

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DEFAULT_THRESHOLD, type Rule, type RuleDefinition, type RulePattern, type SemanticRuleDefinition } from "@jewriter/engine";
+import { DEFAULT_THRESHOLD, type Rule, type RuleDefinition, type RulePattern, type SemanticRuleDefinition } from "@jevditor/engine";
 import { api, ApiError, type PreviewResult } from "../api.js";
 
 const BLANK: SemanticRuleDefinition = {

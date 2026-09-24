@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Rule } from "@jewriter/engine";
+import type { Rule } from "@jevditor/engine";
 import { api, type Suppression } from "./api.js";
 import { Editor } from "./components/Editor.js";
 import { Playground } from "./components/Playground.js";
@@ -42,7 +42,7 @@ export function App() {
   return (
     <div className="jw-app">
       <header className="jw-header">
-        <span className="jw-logo">Jewriter</span>
+        <span className="jw-logo">Jevditor</span>
         <nav className="jw-tabs" aria-label="Sections">
           {(["write", "rules", "playground"] as const).map((t) => (
             <button key={t} type="button" aria-current={tab === t ? "page" : undefined} onClick={() => setTab(t)}>

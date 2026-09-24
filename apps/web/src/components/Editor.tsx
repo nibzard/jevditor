@@ -1,13 +1,13 @@
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Rule } from "@jewriter/engine";
+import type { Rule } from "@jevditor/engine";
 import { api, type Suppression } from "../api.js";
 import { LintController, type CheckStatus } from "../lint/controller.js";
 import { getFindings, LintExtension, setActive, setFindings, type DisplayFinding } from "../lint/plugin.js";
 import { FindingCard } from "./FindingCard.js";
 
-const STORAGE_KEY = "jewriter:document";
+const STORAGE_KEY = "jevditor:document";
 
 const SAMPLE = `<p>I missed my train this morning.</p><p>It taught me more about leadership than ten years in management.</p><p>Here are five lessons every founder needs to hear.</p><p>Our revolutionary platform seamlessly empowers teams to unlock their full potential, and we should circle back on the the pricing.</p>`;
 

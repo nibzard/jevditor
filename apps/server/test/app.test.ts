@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { semanticRulesFor, snapshotId, sentenceTargets, passageTargets, type Rule, type SemanticRuleDefinition } from "@jewriter/engine";
+import { semanticRulesFor, snapshotId, sentenceTargets, passageTargets, type Rule, type SemanticRuleDefinition } from "@jevditor/engine";
 import { createApp } from "../src/app.js";
 import type { Classification, Classifier, ClassifierState } from "../src/classifier.js";
 import { Gate } from "../src/infra.js";

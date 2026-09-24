@@ -1,6 +1,6 @@
-import type { Rule, RuleDefinition, SemanticRuleDefinition, Sensitivity } from "@jewriter/engine";
+import type { Rule, RuleDefinition, SemanticRuleDefinition, Sensitivity } from "@jevditor/engine";
 
-const TOKEN = (import.meta.env.VITE_JEWRITER_TOKEN as string | undefined) ?? "dev-token";
+const TOKEN = (import.meta.env.VITE_JEVDITOR_TOKEN as string | undefined) ?? "dev-token";
 
 export class ApiError extends Error {
   constructor(readonly status: number, readonly body: any) {

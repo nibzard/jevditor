@@ -8,7 +8,7 @@ import {
   type Rule,
   type SemanticScope,
   type Target,
-} from "@jewriter/engine";
+} from "@jevditor/engine";
 import type { Node as PMNode } from "@tiptap/pm/model";
 import type { LintRequest, Suppression, TargetResult } from "../api.js";
 import { docRange, extractBlocks, type ExtractedBlock } from "./extract.js";

@@ -10,7 +10,7 @@ import {
   snapshotId,
   type Rule,
   type SemanticRuleDefinition,
-} from "@jewriter/engine";
+} from "@jevditor/engine";
 import type { Generator } from "./generative.js";
 import { RateLimiter } from "./infra.js";
 import type { LintService } from "./lint.js";

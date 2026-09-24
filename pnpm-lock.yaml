@@ -26,7 +26,7 @@ importers:
       '@hono/node-server':
         specifier: ^2.1.1
         version: 2.1.1(hono@4.13.9)
-      '@jewriter/engine':
+      '@jevditor/engine':
         specifier: workspace:*
         version: link:../../packages/engine
       '@typesafe-ai/sdk':
@@ -48,7 +48,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@jewriter/engine':
+      '@jevditor/engine':
         specifier: workspace:*
         version: link:../../packages/engine
       '@tiptap/core':

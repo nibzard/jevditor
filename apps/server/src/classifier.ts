@@ -1,5 +1,5 @@
 import { choice, noul, TypeSafeClient, type ChoiceQuestion, type NoulQuestion, type Questions } from "@typesafe-ai/sdk";
-import type { SemanticRuleDefinition } from "@jewriter/engine";
+import type { SemanticRuleDefinition } from "@jevditor/engine";
 
 /** What the model evaluates. Kept small: the target, local context, and genre. */
 export interface ClassifierState {

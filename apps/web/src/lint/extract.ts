@@ -1,5 +1,5 @@
 import type { Node as PMNode } from "@tiptap/pm/model";
-import type { BlockRange, TextBlock } from "@jewriter/engine";
+import type { BlockRange, TextBlock } from "@jevditor/engine";
 
 /**
  * A textblock with an explicit map from text offsets to document positions.

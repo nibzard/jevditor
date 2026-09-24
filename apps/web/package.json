@@ -1,5 +1,5 @@
 {
-  "name": "@jewriter/web",
+  "name": "@jevditor/web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,7 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@jewriter/engine": "workspace:*",
+    "@jevditor/engine": "workspace:*",
     "@tiptap/core": "^3.31.3",
     "@tiptap/pm": "^3.31.3",
     "@tiptap/react": "^3.31.3",

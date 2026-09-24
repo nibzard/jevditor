@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { isSemantic, targetsForScope, type Rule, type SemanticRule, type Target, type TextBlock } from "@jewriter/engine";
+import { isSemantic, targetsForScope, type Rule, type SemanticRule, type Target, type TextBlock } from "@jevditor/engine";
 import { api, type Evaluation, type Label, type Metrics, type PreviewResult } from "../api.js";
 import { Probability } from "./RuleEditor.js";
 

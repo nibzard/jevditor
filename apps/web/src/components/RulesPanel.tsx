@@ -1,4 +1,4 @@
-import type { Rule, Sensitivity } from "@jewriter/engine";
+import type { Rule, Sensitivity } from "@jevditor/engine";
 import { api, type Suppression } from "../api.js";
 
 const SCOPE_LABEL: Record<string, string> = { sentence: "Sentence", passage: "Passage", section: "Section" };

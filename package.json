@@ -1,10 +1,10 @@
 {
-  "name": "jewriter",
+  "name": "jevditor",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.33.0",
   "scripts": {
-    "dev": "pnpm --parallel --filter @jewriter/server --filter @jewriter/web dev",
+    "dev": "pnpm --parallel --filter @jevditor/server --filter @jevditor/web dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test"

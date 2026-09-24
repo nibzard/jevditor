@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PRESET_RULES, type SemanticRuleDefinition } from "@jewriter/engine";
+import { PRESET_RULES, type SemanticRuleDefinition } from "@jevditor/engine";
 import { buildQuestions, InvalidResultError, JevClassifier, readJudgments } from "../src/classifier.js";
 
 const linkedin = PRESET_RULES.find((p) => p.key === "linkedin-voice")!.definition as SemanticRuleDefinition;

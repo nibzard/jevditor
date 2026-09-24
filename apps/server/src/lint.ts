@@ -6,7 +6,7 @@ import {
   type SemanticRule,
   type SemanticRuleDefinition,
   type SemanticScope,
-} from "@jewriter/engine";
+} from "@jevditor/engine";
 import type { Classifier, RuleJudgment } from "./classifier.js";
 import { CapacityError, Gate, LruCache, sha256 } from "./infra.js";
 

@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
-import { DEFAULT_THRESHOLD, type SemanticRuleDefinition } from "@jewriter/engine";
+import { DEFAULT_THRESHOLD, type SemanticRuleDefinition } from "@jevditor/engine";
 
 /**
  * Generative work happens only when the writer asks for it: drafting a rule

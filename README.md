@@ -1,4 +1,4 @@
-# Jewriter
+# Jevditor
 
 A programmable writing linter: a personal style guide that runs while you write.
 

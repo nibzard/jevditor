@@ -8,7 +8,7 @@ import { LintService } from "./lint.js";
 import { Store } from "./store.js";
 
 const config = loadConfig();
-const log = (msg: string) => console.log(`[jewriter] ${msg}`);
+const log = (msg: string) => console.log(`[jevditor] ${msg}`);
 
 const classifier = config.demo
   ? new DemoClassifier()
@@ -33,5 +33,5 @@ serve({ fetch: app.fetch, port: config.port }, (info) => {
   log(`listening on http://localhost:${info.port}`);
   log(`classifier: ${classifier.name} (${classifier.model})${config.demo ? " — demo only, not Jev" : ""}`);
   log(`generation: ${config.generation ? config.anthropicModel : "off (set ANTHROPIC_API_KEY to enable rule drafting and rewrites)"}`);
-  if (config.tokens.has("dev-token")) log("auth: development token 'dev-token' (set JEWRITER_TOKENS for real users)");
+  if (config.tokens.has("dev-token")) log("auth: development token 'dev-token' (set JEVDITOR_TOKENS for real users)");
 });

@@ -1,7 +1,7 @@
 import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey, type EditorState, type Transaction } from "@tiptap/pm/state";
 import { Decoration, DecorationSet, type EditorView } from "@tiptap/pm/view";
-import type { Scope } from "@jewriter/engine";
+import type { Scope } from "@jevditor/engine";
 
 export interface DisplayFinding {
   id: string;
@@ -32,7 +32,7 @@ interface LintState {
   decorations: DecorationSet;
 }
 
-export const lintKey = new PluginKey<LintState>("jewriterLint");
+export const lintKey = new PluginKey<LintState>("jevditorLint");
 
 type Meta = { findings: DisplayFinding[] } | { active: string | null };
 
@@ -99,7 +99,7 @@ export interface LintExtensionOptions {
  * each transaction so they stay attached to the text they describe.
  */
 export const LintExtension = Extension.create<LintExtensionOptions>({
-  name: "jewriterLint",
+  name: "jevditorLint",
 
   addOptions() {
     return { onActivate: () => {} };

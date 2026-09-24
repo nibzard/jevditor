@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
-import { PRESET_RULES, type Rule, type RuleDefinition, type Sensitivity } from "@jewriter/engine";
+import { PRESET_RULES, type Rule, type RuleDefinition, type Sensitivity } from "@jevditor/engine";
 
 export interface Label {
   id: string;
