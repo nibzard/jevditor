@@ -42,6 +42,48 @@ function push(out: Array<{ start: number; end: number }>, text: string, start: n
   if (end > start && /[\p{L}\p{N}]/u.test(text.slice(start, end))) out.push({ start, end });
 }
 
+/** More parts than this means the split is too fine to be useful. */
+export const MAX_PHRASES = 8;
+
+const PHRASE_CUT = /[,;:()\u2013\u2014]|\s+(?=(?:and|but|or|so|because|which|that|while|although|though|whereas)\s)/giu;
+const PHRASE_EDGE = /[\s,;:()\u2013\u2014.!?…"'“”‘’]/u;
+
+/**
+ * Split one sentence into clause-like parts, so a sentence finding can be
+ * narrowed to the part that shows it. Offsets index into `sentence`. A
+ * one-word part is joined to its neighbour. Returns no parts when the
+ * sentence has fewer than 2 parts or more than MAX_PHRASES.
+ */
+export function splitPhrases(sentence: string): Array<{ start: number; end: number }> {
+  const raw: Array<{ start: number; end: number }> = [];
+  let start = 0;
+  for (const m of sentence.matchAll(PHRASE_CUT)) {
+    raw.push({ start, end: m.index });
+    start = m.index + m[0].length;
+  }
+  raw.push({ start, end: sentence.length });
+
+  const parts: Array<{ start: number; end: number }> = [];
+  for (let { start, end } of raw) {
+    while (start < end && PHRASE_EDGE.test(sentence[start]!)) start++;
+    while (end > start && PHRASE_EDGE.test(sentence[end - 1]!)) end--;
+    if (/[\p{L}\p{N}]/u.test(sentence.slice(start, end))) parts.push({ start, end });
+  }
+
+  const words = (r: { start: number; end: number }) => sentence.slice(r.start, r.end).match(/[\p{L}\p{N}']+/gu)?.length ?? 0;
+  for (let i = 0; i < parts.length && parts.length > 1; ) {
+    if (words(parts[i]!) >= 2) {
+      i++;
+      continue;
+    }
+    const j = i + 1 < parts.length ? i + 1 : i - 1;
+    const [a, b] = [Math.min(i, j), Math.max(i, j)];
+    parts.splice(a, 2, { start: parts[a]!.start, end: parts[b]!.end });
+    i = a;
+  }
+  return parts.length >= 2 && parts.length <= MAX_PHRASES ? parts : [];
+}
+
 function clip(text: string, fromEnd: boolean): string {
   if (text.length <= CONTEXT_MAX_CHARS) return text;
   return fromEnd ? "…" + text.slice(-CONTEXT_MAX_CHARS) : text.slice(0, CONTEXT_MAX_CHARS) + "…";

@@ -37,6 +37,8 @@ export interface RuleResult {
   flag: boolean;
   suppressed: boolean;
   patternId?: string;
+  /** For sentence rules: the part of the target that shows the match best. Offsets index into the target text. */
+  phrase?: { start: number; end: number; confidence: number };
 }
 
 export type TargetResult =
@@ -114,5 +116,5 @@ export const api = {
   evaluate: (ruleId: string) => request<Evaluation>("POST", `/api/rules/${ruleId}/evaluate`),
   draft: (text: string) => request<RuleDraft>("POST", "/api/rules/draft", { request: text }),
   rewrite: (body: { text: string; context: string; instruction: string; ruleIds: string[] }) =>
-    request<{ rewrite: string }>("POST", "/api/rewrite", body),
+    request<{ rewrite: string; samePoint: { probability: number; model: string } | null }>("POST", "/api/rewrite", body),
 };

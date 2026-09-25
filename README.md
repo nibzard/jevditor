@@ -54,11 +54,14 @@ Editor transaction
 - **Positions.** Extraction records the document position of every character. Highlights are never found again with `indexOf`, because the same sentence can appear twice.
 - **Decorations only.** Findings never enter the document, copied text, or exported HTML. Between checks they're mapped through each transaction.
 - **Failures aren't "no issues".** Provider errors come back per target as `checking_unavailable`. The toolbar says checking is unavailable, and those targets are retried after 10 s.
+- **Phrase narrowing.** For sentence rules, code splits the sentence into clause-like phrases (`splitPhrases`), and a speculative Choice question asks which phrase shows the match most clearly. If the choice confidence is at least 0.5, only that phrase is underlined. "Rewrite" and "Keep this" still apply to the whole sentence.
 - **Question ids are opaque to Jev.** Questions are named `r0`, `p0`, and so on. The rule, its criteria, its approved examples, and the instruction to treat document text as data are all written out in the question itself.
 
 ## Rules
 
 A semantic rule has a name, scope, question, *flag when*, *allow when*, boundary cases, examples you've approved, optional patterns (for more specific card text), card text, and a threshold. Changing the definition creates a new **version**. Old results and cache entries no longer match, and the server rejects lint requests made with old versions. **Enabled** and **sensitivity** only affect display, so changing them doesn't create a version and reuses cached probabilities. Sensitivity shifts the threshold: gentle +0.07, strict −0.15, clamped to [0.5, 0.99].
+
+`pnpm --filter ./apps/server eval` runs every semantic preset against document samples in `apps/server/evals/samples.ts` with real Jev (it needs `TYPESAFE_API_KEY`). The samples include clean text that no rule may flag. A failure means a preset or its threshold needs work, or a sample label is wrong.
 
 Presets (starting hypotheses, not validated settings): *Avoid LinkedIn voice* (passage), *Not marketing copy* and *Concrete over vague* (sentence), *Don't explain it twice* (section), plus exact rules *Phrases to avoid*, *Repeated word*, and *Long sentences* (off by default).
 
@@ -76,7 +79,7 @@ On a finding card, **Keep this** offers three choices with different meanings:
 
 Dismissing a card is never treated as a training label.
 
-**Rewrite** sends the target, its context, and the rule to Claude, then shows a word diff you have to accept. If the text changed after it was checked, nothing is replaced. The rewrite is checked against your rules again like any other edit, but that doesn't confirm the meaning was kept.
+**Rewrite** sends the target, its context, and the rule to Claude, then shows a word diff you have to accept. If the text changed after it was checked, nothing is replaced. Before the diff is shown, Jev answers one more question: does the rewrite make the same point as the original? The card shows that probability and warns below 0.5. It's advisory, so if the check fails, the card says so and the rewrite still shows. After you accept, the rewrite is checked against your rules again like any other edit.
 
 ## Playground and evaluation
 

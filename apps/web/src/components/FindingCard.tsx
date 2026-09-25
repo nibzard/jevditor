@@ -20,7 +20,7 @@ type RewriteState =
   | { kind: "none" }
   | { kind: "asking"; instruction: string }
   | { kind: "loading" }
-  | { kind: "ready"; text: string }
+  | { kind: "ready"; text: string; samePoint: number | null }
   | { kind: "error"; message: string };
 
 const SCOPE_NOUN = { phrase: "phrase", sentence: "sentence", passage: "passage", section: "section" } as const;
@@ -54,8 +54,8 @@ export function FindingCard(props: FindingCardProps) {
   const runRewrite = async (instruction: string) => {
     setRewrite({ kind: "loading" });
     try {
-      const { rewrite: text } = await api.rewrite({ text: f.text, context: f.context, instruction, ruleIds: [f.ruleId] });
-      setRewrite({ kind: "ready", text });
+      const { rewrite: text, samePoint } = await api.rewrite({ text: f.text, context: f.context, instruction, ruleIds: [f.ruleId] });
+      setRewrite({ kind: "ready", text, samePoint: samePoint?.probability ?? null });
     } catch {
       setRewrite({ kind: "error", message: "Rewriting is unavailable right now." });
     }
@@ -88,6 +88,11 @@ export function FindingCard(props: FindingCardProps) {
           Matched this {SCOPE_NOUN[f.scope]} with probability {f.probability.toFixed(2)} (shown at ≥ {f.threshold?.toFixed(2)})
         </p>
       )}
+      {f.phraseConfidence !== undefined && (
+        <p className="jw-card__meta" title="Jev picked the part of the sentence that shows the match most clearly.">
+          Narrowed to the underlined phrase (choice confidence {f.phraseConfidence.toFixed(2)})
+        </p>
+      )}
 
       {rewrite.kind === "asking" && (
         <form
@@ -111,7 +116,8 @@ export function FindingCard(props: FindingCardProps) {
       {rewrite.kind === "ready" && (
         <div className="jw-card__rewrite">
           <Diff before={f.text} after={rewrite.text} />
-          <p className="jw-muted jw-small">It will be checked against your rules again. That doesn't confirm the meaning was kept — read it first.</p>
+          <SamePoint probability={rewrite.samePoint} />
+          <p className="jw-muted jw-small">It will be checked against your rules again.</p>
           <div className="jw-row">
             <button
               type="button"
@@ -165,5 +171,25 @@ export function FindingCard(props: FindingCardProps) {
         </div>
       )}
     </div>
+  );
+}
+
+/** Below this probability, the card warns that the rewrite may change the point. */
+const SAME_POINT_WARN = 0.5;
+
+function SamePoint({ probability }: { probability: number | null }) {
+  if (probability === null) {
+    return <p className="jw-muted jw-small">The meaning check is unavailable. Read the rewrite to make sure it keeps your point.</p>;
+  }
+  const p = probability.toFixed(2);
+  const title = "Model probability that the rewrite makes the same point as your text. It is not a guarantee.";
+  return probability < SAME_POINT_WARN ? (
+    <p className="jw-error jw-small" title={title}>
+      This rewrite may change your point (same point: {p}). Read it carefully.
+    </p>
+  ) : (
+    <p className="jw-muted jw-small" title={title}>
+      Probably makes the same point (same point: {p}). Read it before you accept.
+    </p>
   );
 }

@@ -75,6 +75,61 @@ describe("extract", () => {
 });
 
 describe("LintController", () => {
+  it("underlines only the phrase Jev narrowed a sentence finding to", async () => {
+    const h = harness();
+    const vague = rules.find((r) => r.id.endsWith("vague-claims"))!;
+    const text = "Some people might perhaps argue that bike lanes could possibly slow traffic, in a sense.";
+    const d = doc("Intro sentence here.", text);
+    h.c.update(d);
+    await vi.advanceTimersByTimeAsync(500);
+    const p = h.calls[0]!;
+    p.resolve({
+      results: p.body.targets.map((t) => ({
+        snapshot: t.snapshot,
+        status: "ok" as const,
+        model: "fake",
+        cached: false,
+        results:
+          t.text === text
+            ? [{ ruleId: vague.id, ruleVersion: 1, probability: 0.9, threshold: 0.7, flag: true, suppressed: false, phrase: { start: 0, end: 31, confidence: 0.96 } }]
+            : [],
+      })),
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    const f = h.findings().find((x) => x.ruleId === vague.id)!;
+    expect(d.textBetween(f.from, f.to)).toBe("Some people might perhaps argue");
+    expect(f.phraseConfidence).toBe(0.96);
+    // Rewrites and "keep this" still work on the whole sentence.
+    expect(f.text).toBe(text);
+    expect(f.occurrenceText).toBe(text);
+  });
+
+  it("underlines the whole sentence when Jev is unsure which phrase shows the match", async () => {
+    const h = harness();
+    const vague = rules.find((r) => r.id.endsWith("vague-claims"))!;
+    const text = "Some people might perhaps argue that bike lanes could possibly slow traffic, in a sense.";
+    const d = doc(text);
+    h.c.update(d);
+    await vi.advanceTimersByTimeAsync(500);
+    const p = h.calls[0]!;
+    p.resolve({
+      results: p.body.targets.map((t) => ({
+        snapshot: t.snapshot,
+        status: "ok" as const,
+        model: "fake",
+        cached: false,
+        results:
+          t.scope === "sentence"
+            ? [{ ruleId: vague.id, ruleVersion: 1, probability: 0.9, threshold: 0.7, flag: true, suppressed: false, phrase: { start: 0, end: 31, confidence: 0.16 } }]
+            : [],
+      })),
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    const f = h.findings().find((x) => x.ruleId === vague.id)!;
+    expect(d.textBetween(f.from, f.to)).toBe(text);
+    expect(f.phraseConfidence).toBeUndefined();
+  });
+
   it("shows exact findings immediately and semantic ones only after a pause", async () => {
     const h = harness();
     h.c.update(doc(...LINKEDIN, "We should circle back."));

@@ -286,12 +286,22 @@ export function createApp(deps: AppDeps) {
       .map((id) => store.getRule(userId, id))
       .filter((r): r is Rule => Boolean(r))
       .map((r) => (isSemantic(r) ? `${r.definition.name}: flag when ${r.definition.flagWhen} Allow when ${r.definition.allowWhen}` : r.definition.name));
+    let rewrite: string;
     try {
-      return c.json({ rewrite: await generator.rewrite({ text: b.text, context: b.context, instruction: b.instruction, rules }) });
+      rewrite = await generator.rewrite({ text: b.text, context: b.context, instruction: b.instruction, rules });
     } catch (err) {
       log(`rewrite failed: ${(err as Error).name}`);
       return c.json({ error: "generation_failed" }, 502);
     }
+    // The meaning check is advisory. When it fails, the writer still gets the rewrite and reads it without a verdict.
+    let samePoint: { probability: number; model: string } | null = null;
+    try {
+      const r = await lint.comparePoint({ original: b.text, revised: rewrite, context: b.context, rules });
+      samePoint = { probability: r.probability, model: r.model };
+    } catch (err) {
+      log(`same-point check failed: ${(err as Error).name}`);
+    }
+    return c.json({ rewrite, samePoint });
   });
 
   return app;

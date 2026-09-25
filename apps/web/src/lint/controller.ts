@@ -27,6 +27,9 @@ export interface Timing {
 
 export const DEFAULT_TIMING: Timing = { shortDelayMs: 500, longDelayMs: 4000, retryMs: 10_000 };
 
+/** Below this choice confidence, a sentence finding underlines the whole sentence instead of one phrase. */
+export const PHRASE_MIN_CONFIDENCE = 0.5;
+
 const MAX_TARGETS_PER_REQUEST = 24;
 const MAX_RESULTS = 3000;
 
@@ -290,8 +293,14 @@ export class LintController {
         if (!rule || rule.version !== r.ruleVersion || rule.definition.kind !== "semantic") continue;
         if (this.isSuppressed(rule.id, target.text)) continue;
         const pattern = rule.definition.patterns?.find((p) => p.id === r.patternId);
-        const ranges = target.ranges.map((range) => docRange(this.blocks, range));
         const multi = target.scope !== "sentence";
+        const ranges = target.ranges.map((range) => docRange(this.blocks, range));
+        // A sentence target has one range; a narrowed finding underlines only the phrase inside it.
+        const sentence = target.ranges[0]!;
+        const phrase =
+          !multi && r.phrase && r.phrase.confidence >= PHRASE_MIN_CONFIDENCE && r.phrase.start < r.phrase.end && r.phrase.end <= sentence.end - sentence.start
+            ? docRange(this.blocks, { block: sentence.block, start: sentence.start + r.phrase.start, end: sentence.start + r.phrase.end })
+            : undefined;
         findings.push({
           id: `s:${rule.id}:${snapshot}`,
           ruleId: rule.id,
@@ -307,8 +316,9 @@ export class LintController {
           snapshot,
           probability: r.probability,
           threshold: r.threshold,
-          from: ranges[0]!.from,
-          to: ranges.at(-1)!.to,
+          from: phrase?.from ?? ranges[0]!.from,
+          to: phrase?.to ?? ranges.at(-1)!.to,
+          ...(phrase ? { phraseConfidence: r.phrase!.confidence } : {}),
           ...(multi
             ? { nodes: target.ranges.map((range) => ({ from: this.blocks[range.block]!.nodeFrom, to: this.blocks[range.block]!.nodeTo })) }
             : {}),

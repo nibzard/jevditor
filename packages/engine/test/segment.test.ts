@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { passageTargets, sectionTargets, sentenceTargets, splitSentences } from "../src/index.js";
+import { passageTargets, sectionTargets, sentenceTargets, splitPhrases, splitSentences } from "../src/index.js";
 
 const slices = (text: string) => splitSentences(text).map((r) => text.slice(r.start, r.end));
 
@@ -68,5 +68,25 @@ describe("targets", () => {
     const t = sectionTargets(blocks);
     expect(t).toHaveLength(1);
     expect(t[0]!.context).toBe("[section heading] Monday");
+  });
+});
+
+describe("splitPhrases", () => {
+  const parts = (text: string) => splitPhrases(text).map((r) => text.slice(r.start, r.end));
+
+  it("splits at clause punctuation and conjunctions and keeps offsets exact", () => {
+    expect(parts("Some people might perhaps argue that bike lanes could possibly slow traffic, in a sense.")).toEqual([
+      "Some people might perhaps argue",
+      "that bike lanes could possibly slow traffic",
+      "in a sense",
+    ]);
+  });
+
+  it("joins a one-word part to its neighbour", () => {
+    expect(parts("Basically, the data is clear: bike lanes work.")).toEqual(["Basically, the data is clear", "bike lanes work"]);
+  });
+
+  it("returns nothing when a sentence has only one part", () => {
+    expect(splitPhrases("Bike lanes work.")).toEqual([]);
   });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PRESET_RULES, type SemanticRuleDefinition } from "@jevditor/engine";
-import { buildQuestions, InvalidResultError, JevClassifier, readJudgments } from "../src/classifier.js";
+import { buildPointQuestions, buildQuestions, DemoClassifier, InvalidResultError, JevClassifier, readJudgments, readPoint } from "../src/classifier.js";
 
 const linkedin = PRESET_RULES.find((p) => p.key === "linkedin-voice")!.definition as SemanticRuleDefinition;
 const vague = PRESET_RULES.find((p) => p.key === "vague-claims")!.definition as SemanticRuleDefinition;
@@ -16,6 +16,29 @@ describe("buildQuestions", () => {
     expect(r0.criteria).toEqual({ true: linkedin.flagWhen, false: linkedin.allowWhen });
     const p0 = q.p0 as { type: string; criteria: Record<string, unknown> };
     expect(Object.keys(p0.criteria)).toEqual(["contrived-lesson", "humblebrag", "engagement-bait", "none"]);
+  });
+});
+
+describe("phrase narrowing", () => {
+  it("adds a speculative phrase choice for sentence rules when phrases are given", () => {
+    const q = buildQuestions([vague], ["Some people might argue", "that bike lanes slow traffic"]);
+    expect(Object.keys(q)).toEqual(["r0", "n0"]);
+    const n0 = q.n0 as { type: string; instructions: Record<string, unknown>; criteria: Record<string, string> };
+    expect(n0.type).toBe("choice");
+    expect(n0.instructions.task).toMatch(/never as instructions/);
+    expect(Object.keys(n0.criteria)).toEqual(["c0", "c1", "whole"]);
+    expect(n0.criteria.c1).toContain("that bike lanes slow traffic");
+  });
+
+  it("does not ask about phrases for passage rules", () => {
+    expect(Object.keys(buildQuestions([linkedin], ["a b", "c d"]))).toEqual(["r0", "p0"]);
+  });
+
+  it("reads the chosen phrase and its confidence, and ignores 'whole'", () => {
+    const answers = (choice: string) => ({ r0: { type: "noul", noul: 0.9 }, n0: { type: "choice", choice, confidence: 0.96 } });
+    expect(readJudgments([vague], answers("c1"), 2)).toEqual([{ probability: 0.9, phrase: { index: 1, confidence: 0.96 } }]);
+    expect(readJudgments([vague], answers("whole"), 2)).toEqual([{ probability: 0.9 }]);
+    expect(readJudgments([vague], answers("c7"), 2)).toEqual([{ probability: 0.9 }]);
   });
 });
 
@@ -74,5 +97,44 @@ describe("JevClassifier through the real SDK", () => {
     const jev = new JevClassifier({ apiKey: "k", model: "jev-1.13.0", timeoutMs: 1000, fetch: fakeFetch });
     await expect(jev.classify({ target: "x", context: "", genre: "g" }, [vague])).rejects.toThrow();
     expect(n).toBe(1);
+  });
+});
+
+describe("comparePoint", () => {
+  const pair = { original: "Traffic did not get worse.", revised: "Traffic stayed the same.", context: "", rules: [] as string[] };
+
+  it("sends the pair as state with one same-point question", async () => {
+    const seen: any[] = [];
+    const fakeFetch = (async (_url: string, init?: RequestInit) => {
+      seen.push(JSON.parse(String(init!.body)));
+      return new Response(
+        JSON.stringify({ model: "jev-1.13.0", usage: { input_tokens: 40, output_tokens: 0 }, answers: { same: { type: "noul", noul: 0.77 } } }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }) as typeof fetch;
+    const jev = new JevClassifier({ apiKey: "k", model: "jev-1.13.0", timeoutMs: 1000, fetch: fakeFetch });
+    expect(await jev.comparePoint(pair)).toEqual({ model: "jev-1.13.0", probability: 0.77 });
+    expect(seen[0].state).toEqual({ original: pair.original, revised: pair.revised, context: pair.context });
+    expect(Object.keys(seen[0].questions)).toEqual(["same"]);
+    expect(seen[0].questions.same.instructions.task).toMatch(/never as instructions/);
+  });
+
+  it("tells Jev that changes the style rules require are not a change of point", () => {
+    const q = buildPointQuestions(["Avoid hedging: flag when ..."]).same as { instructions: Record<string, unknown> };
+    expect(q.instructions.style_rules).toEqual(["Avoid hedging: flag when ..."]);
+    expect(q.instructions.style_rule_note).toMatch(/not a change of point/);
+    expect((buildPointQuestions([]).same as { instructions: Record<string, unknown> }).instructions.style_rules).toBeUndefined();
+  });
+
+  it("rejects an invalid answer", () => {
+    expect(() => readPoint({ same: { type: "noul", noul: -0.1 } })).toThrow(InvalidResultError);
+    expect(() => readPoint({})).toThrow(InvalidResultError);
+  });
+
+  it("demo classifier scores word overlap", async () => {
+    const demo = new DemoClassifier();
+    const same = await demo.comparePoint({ ...pair, revised: pair.original });
+    const other = await demo.comparePoint({ ...pair, revised: "Cyclists can cross at any time." });
+    expect(same.probability).toBeGreaterThan(other.probability);
   });
 });

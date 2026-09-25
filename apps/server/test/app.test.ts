@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { semanticRulesFor, snapshotId, sentenceTargets, passageTargets, type Rule, type SemanticRuleDefinition } from "@jevditor/engine";
 import { createApp } from "../src/app.js";
-import type { Classification, Classifier, ClassifierState } from "../src/classifier.js";
+import type { Classification, Classifier, ClassifierState, PointComparison, PointPair } from "../src/classifier.js";
 import { Gate } from "../src/infra.js";
 import { LintService } from "../src/lint.js";
 import { Store } from "../src/store.js";
@@ -11,14 +11,25 @@ class FakeClassifier implements Classifier {
   readonly model = "fake-1";
   calls: Array<{ state: ClassifierState; rules: string[] }> = [];
   fail = false;
+  pairs: PointPair[] = [];
+  samePoint = 0.9;
   constructor(private readonly score: (text: string, rule: SemanticRuleDefinition) => number) {}
+  async comparePoint(pair: PointPair): Promise<PointComparison> {
+    this.pairs.push(pair);
+    if (this.fail) throw new Error("boom");
+    return { model: this.model, probability: this.samePoint };
+  }
   async classify(state: ClassifierState, rules: readonly SemanticRuleDefinition[]): Promise<Classification> {
     this.calls.push({ state, rules: rules.map((r) => r.name) });
     if (this.fail) throw new Error("boom");
     return {
       model: this.model,
       inputTokens: 1,
-      judgments: rules.map((r) => ({ probability: this.score(state.target, r), ...(r.patterns?.length ? { patternId: r.patterns[0]!.id } : {}) })),
+      judgments: rules.map((r) => ({
+        probability: this.score(state.target, r),
+        ...(r.patterns?.length ? { patternId: r.patterns[0]!.id } : {}),
+        ...(r.scope === "sentence" && state.phrases?.length ? { phrase: { index: state.phrases.length - 1, confidence: 0.8 } } : {}),
+      })),
     };
   }
 }
@@ -110,6 +121,21 @@ describe("lint", () => {
     const linkedin = rules.find((r) => r.definition.name === "Avoid LinkedIn voice")!;
     expect(passage.results).toEqual([expect.objectContaining({ ruleId: linkedin.id, flag: true, patternId: "contrived-lesson" })]);
     expect(results[0]!.results.every((r) => r.flag === false)).toBe(true);
+  });
+
+  it("narrows sentence findings to a phrase with offsets into the target", async () => {
+    const { call, classifier } = setup();
+    const blocks = [{ type: "paragraph" as const, text: "We might perhaps try it, in a sense, but the lesson is revolutionary." }];
+    const { body } = await lintBody(call, blocks);
+    const res = await call("POST", "/api/lint", body);
+    const { results } = (await res.json()) as {
+      results: Array<{ results: Array<{ phrase?: { start: number; end: number; confidence: number } }> }>;
+    };
+    const sentenceCall = classifier.calls.find((c) => c.state.target === blocks[0]!.text)!;
+    expect(sentenceCall.state.phrases).toEqual(["We might perhaps try it", "in a sense", "but the lesson is revolutionary"]);
+    const phrase = results[0]!.results[0]!.phrase!;
+    expect(blocks[0]!.text.slice(phrase.start, phrase.end)).toBe("but the lesson is revolutionary");
+    expect(phrase.confidence).toBe(0.8);
   });
 
   it("caches per user, and a sensitivity change reuses cached probabilities", async () => {
@@ -230,5 +256,49 @@ describe("generation", () => {
     });
     expect(res.status).toBe(200);
     expect(draftRule).toHaveBeenCalledWith("Flag anything that sounds like a LinkedIn post.");
+  });
+
+  describe("rewrite", () => {
+    function rewriteSetup() {
+      const store = new Store();
+      const classifier = new FakeClassifier(() => 0);
+      const lint = new LintService(classifier, new Gate(1, 10), { cacheEntries: 1, cacheTtlMs: 1 });
+      const rewrite = vi.fn(async () => "Use this chance to plan the bike network.");
+      const app = createApp({ store, lint, generator: { draftRule: vi.fn(), rewrite }, tokens: new Map([["alice-token", "alice"]]) });
+      const post = () =>
+        app.request("/api/rewrite", {
+          method: "POST",
+          headers: { authorization: "Bearer alice-token" },
+          body: JSON.stringify({ text: "Let's leverage this opportunity to drive alignment.", context: "Bike lanes work." }),
+        });
+      return { classifier, post };
+    }
+
+    it("asks Jev whether the rewrite makes the same point", async () => {
+      const { classifier, post } = rewriteSetup();
+      classifier.samePoint = 0.31;
+      const res = await post();
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({
+        rewrite: "Use this chance to plan the bike network.",
+        samePoint: { probability: 0.31, model: "fake-1" },
+      });
+      expect(classifier.pairs).toEqual([
+        {
+          original: "Let's leverage this opportunity to drive alignment.",
+          revised: "Use this chance to plan the bike network.",
+          context: "Bike lanes work.",
+          rules: [],
+        },
+      ]);
+    });
+
+    it("still returns the rewrite when the meaning check fails", async () => {
+      const { classifier, post } = rewriteSetup();
+      classifier.fail = true;
+      const res = await post();
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ rewrite: "Use this chance to plan the bike network.", samePoint: null });
+    });
   });
 });

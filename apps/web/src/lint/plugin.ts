@@ -22,6 +22,8 @@ export interface DisplayFinding {
   threshold?: number;
   from: number;
   to: number;
+  /** Set when Jev narrowed a sentence finding to one phrase; `from` and `to` then cover only that phrase. */
+  phraseConfidence?: number;
   /** For passage and section findings: the block nodes covered. */
   nodes?: Array<{ from: number; to: number }>;
 }
